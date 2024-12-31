@@ -1,0 +1,60 @@
+import requests
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Step 1: Fetch Data from OpenWeatherMap API
+def fetch_weather_data(cities, api_key):
+    api_url = "http://api.openweathermap.org/data/2.5/weather"
+    weather_data = []
+    
+    for city in cities:
+        params = {
+            "q": city,
+            "appid": api_key,
+            "units": "metric"
+        }
+        response = requests.get(api_url, params=params)
+        if response.status_code == 200:
+            data = response.json()
+            weather_data.append({
+                "City": data["name"],
+                "Temperature (°C)": data["main"]["temp"],
+                "Humidity (%)": data["main"]["humidity"],
+                "Weather": data["weather"][0]["description"]
+            })
+        else:
+            print(f"Failed to fetch data for {city}: {response.status_code}")
+    
+    return pd.DataFrame(weather_data)
+
+# Step 2: Process the Data
+def visualize_weather_data(df):
+    # Bar plot for temperature and humidity
+    df.set_index("City")[["Temperature (°C)", "Humidity (%)"]].plot(kind="bar", figsize=(10, 6))
+    plt.title("Temperature and Humidity by City")
+    plt.ylabel("Value")
+    plt.xlabel("City")
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+    
+    # Seaborn scatter plot for temperature vs humidity
+    sns.scatterplot(data=df, x="Temperature (°C)", y="Humidity (%)", hue="City", size="Temperature (°C)", sizes=(50, 200))
+    plt.title("Temperature vs Humidity")
+    plt.show()
+
+# Main Execution
+if __name__ == "__main__":
+    # Replace YOUR_API_KEY with your OpenWeatherMap API key
+    API_KEY = "YOUR_API_KEY"
+    cities = ["London", "New York", "Tokyo", "Sydney", "Mumbai"]
+    
+    # Fetch weather data
+    weather_df = fetch_weather_data(cities, API_KEY)
+    
+    # Print the fetched data
+    print(weather_df)
+    
+    # Visualize the data
+    visualize_weather_data(weather_df)
