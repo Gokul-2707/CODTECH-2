@@ -1,0 +1,44 @@
+from flask import Flask, request, jsonify
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+# Initialize the Flask app
+app = Flask(__name__)
+
+# Load pre-trained model and tokenizer
+model_name = "microsoft/DialoGPT-medium"  # Pre-trained conversational model
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(model_name)
+
+# Keep chat history
+chat_history_ids = None
+
+@app.route('/chat', methods=['POST'])
+def chat():
+    global chat_history_ids
+    user_input = request.json.get('message', '')
+
+    if not user_input:
+        return jsonify({'response': 'Please provide a message.'}), 400
+
+    # Encode the user input and add end-of-sequence token
+    input_ids = tokenizer.encode(user_input + tokenizer.eos_token, return_tensors="pt")
+
+    # Concatenate new input with chat history
+    bot_input_ids = (
+        torch.cat([chat_history_ids, input_ids], dim=-1)
+        if chat_history_ids is not None
+        else input_ids
+    )
+
+    # Generate a response
+    chat_history_ids = model.generate(
+        bot_input_ids, max_length=1000, pad_token_id=tokenizer.eos_token_id
+    )
+
+    # Decode and format the response
+    response = tokenizer.decode(chat_history_ids[:, bot_input_ids.shape[-1] :][0], skip_special_tokens=True)
+    
+    return jsonify({'response': response})
+
+if __name__ == "__main__":
+    app.run(port=5000, debug=True)
