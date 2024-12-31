@@ -1,0 +1,59 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+from jinja2 import Template
+from weasyprint import HTML
+
+# Step 1: Load Data
+data = {
+    "Month": ["January", "February", "March", "April", "May"],
+    "Sales": [100, 120, 130, 90, 150],
+}
+df = pd.DataFrame(data)
+
+# Step 2: Generate a Plot
+plt.figure(figsize=(6, 4))
+plt.plot(df["Month"], df["Sales"], marker="o")
+plt.title("Monthly Sales")
+plt.xlabel("Month")
+plt.ylabel("Sales")
+plt.grid()
+plt.savefig("sales_plot.png")  # Save the plot as an image
+plt.close()
+
+# Step 3: Create HTML Template
+html_template = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sales Report</title>
+</head>
+<body>
+    <h1>Sales Report</h1>
+    <p>This report provides an overview of monthly sales performance.</p>
+    <h2>Data</h2>
+    <table border="1" cellspacing="0" cellpadding="5">
+        <tr>
+            <th>Month</th>
+            <th>Sales</th>
+        </tr>
+        {% for row in data %}
+        <tr>
+            <td>{{ row.Month }}</td>
+            <td>{{ row.Sales }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <h2>Sales Chart</h2>
+    <img src="sales_plot.png" alt="Sales Chart">
+</body>
+</html>
+"""
+
+# Step 4: Render Template
+template = Template(html_template)
+html_content = template.render(data=df.to_dict(orient="records"))
+
+# Step 5: Generate PDF
+HTML(string=html_content).write_pdf("sales_report.pdf")
+
+print("Report generated successfully!")
